@@ -14,6 +14,15 @@ else:
     SelfInstance = _t.Any
 
 
+class SingletonMeta(type):
+    _instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
 class ClusterModeType(_t.TypedDict, total=False):
     host: str
     port: int
@@ -29,7 +38,7 @@ class RedisConnectKwargs(_t.TypedDict, total=False):
 
 
 class PydanticFieldKwargs(_t.TypedDict, total=False):
-    default: ellipsis
+    default: Ellipsis
     alias: _t.Optional[str]
     alias_priority: int | None
     validation_alias: str | AliasPath | AliasChoices | None
@@ -64,6 +73,7 @@ class PydanticFieldKwargs(_t.TypedDict, total=False):
     max_length: int | None
     union_mode: _t.Literal['smart', 'left_to_right']
     fail_fast: bool | None
+    default_factory: _t.Callable[[], _t.Any] = None
 
 
 Endpoint = _t.Union[
@@ -79,16 +89,6 @@ RedisClientInstance = _t.TypeVar('RedisClientInstance', SyncRedis, AsyncRedis, A
 RedisClientType = _t.Type[RedisClientInstance]
 
 DictAny = _t.Dict[str, _t.Any]
-
-
-class SingletonMeta(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super().__call__(*args, **kwargs)
-        return cls._instances[cls]
-
 
 RedisDataType = _t.Literal[
     'string', 'list', 'hash', 'stream', 'hyper_log_log',
