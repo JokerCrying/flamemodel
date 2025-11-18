@@ -7,30 +7,36 @@ from .models import (
 )
 from .adaptor.interface import RedisAdaptor
 from .utils.symbol_by_name import symbol_by_name
-from typing import Optional, ClassVar
+from typing import Optional
 
 
 class FlameModel:
-    __key_builder_cls__: ClassVar[str] = 'src.flamemodel.utils.key_builder:KeyBuilder'
 
     def __init__(
             self,
             runtime_mode: RuntimeMode,
             endpoint: Endpoint,
-            connect_options: Optional[DictAny] = None
+            connect_options: Optional[DictAny] = None,
+            key_builder_cls: str = 'src.flamemodel.core.key_builder:DefaultKeyBuilder',
+            key_builder_options: Optional[DictAny] = None,
+            serializer_cls: str = 'src.flamemodel.core.serializer:DefaultSerializer',
+            serializer_options: Optional[DictAny] = None
     ):
         self.runtime_mode = runtime_mode
         self.endpoint = endpoint
         self.connect_options = connect_options or {}
-        self.connect_options['decode_responses'] = True
         self.redis_model_repository = RedisModelRepository()
         self.adaptor = RedisAdaptor(self.endpoint, self.connect_options, self.runtime_mode)
-        self.key_builder_cls = symbol_by_name(self.__key_builder_cls__)
+        self.key_builder_cls = symbol_by_name(key_builder_cls)
+        self.key_builder_options = key_builder_options or {}
+        self.serializer_cls = symbol_by_name(serializer_cls)
+        self.serializer_options = serializer_options or {}
         # on init success
         self.on_init()
 
     def on_init(self):
         self._set_model_adaptor()
+        self._set_model_key_builder()
         self._register_models()
 
     def _set_model_adaptor(self):
@@ -41,3 +47,11 @@ class FlameModel:
         for cls in models:
             model_name = cls.__schema__ or cls.__name__
             self.redis_model_repository.register_model(model_name, cls)
+
+    def _set_model_key_builder(self):
+        key_builder_instance = self.key_builder_cls(**self.key_builder_options)
+        BaseRedisModel.set_key_builder(key_builder_instance)
+
+    def _set_model_serializer(self):
+        serializer_instance = self.serializer_cls(self.serializer_options)
+        BaseRedisModel.set_serializer(serializer_instance)

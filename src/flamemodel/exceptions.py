@@ -21,6 +21,14 @@ class RepeatedSetModelMetadataError(FlameModelException):
     pass
 
 
+class RepeatedSetKeyBuilderError(FlameModelException):
+    pass
+
+
+class RepeatedSetSerializerError(FlameModelException):
+    pass
+
+
 class JsonSchemaExtraTypeError(FlameModelException):
     def __init__(self, message, *, error_type):
         self.message = message

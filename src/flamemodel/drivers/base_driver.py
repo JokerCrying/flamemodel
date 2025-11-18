@@ -9,7 +9,7 @@ class BaseDriver(metaclass=SingletonMeta):
     def __init__(self, adaptor: 'RedisAdaptor'):
         self.adaptor = adaptor
 
-    def set(self, key: str, value: str):
+    def commit(self, key: str, value: str):
         return self.adaptor.proxy.set(key, value)
 
     def delete(self, key: str):
