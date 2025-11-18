@@ -86,7 +86,7 @@ class PydanticFieldKwargs(_t.TypedDict, total=False):
     max_length: int | None
     union_mode: _t.Literal['smart', 'left_to_right']
     fail_fast: bool | None
-    default_factory: _t.Callable[[], _t.Any] = None
+    default_factory: _t.Callable[[], _t.Any]
 
 
 Endpoint = _t.Union[
