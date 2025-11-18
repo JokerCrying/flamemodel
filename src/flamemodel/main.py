@@ -37,6 +37,7 @@ class FlameModel:
     def on_init(self):
         self._set_model_adaptor()
         self._set_model_key_builder()
+        self._set_model_serializer()
         self._register_models()
 
     def _set_model_adaptor(self):
