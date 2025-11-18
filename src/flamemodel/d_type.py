@@ -2,6 +2,7 @@ import re
 import sys
 import typing as _t
 import annotated_types
+from types import ModuleType
 from pydantic.config import JsonDict
 from pydantic.fields import FieldInfo, Deprecated
 from pydantic import AliasChoices, AliasPath, types
@@ -21,6 +22,18 @@ class SingletonMeta(type):
         if cls not in cls._instances:
             cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
+
+
+class ReadOnlyModule(ModuleType):
+    def __setattr__(self, key, value):
+        raise ValueError(
+            "Don't try to modify the value of a constant variable!"
+        )
+
+    def __delattr__(self, key):
+        raise ValueError(
+            "Don't try to delete the value of a constant variable!"
+        )
 
 
 class ClusterModeType(_t.TypedDict, total=False):
