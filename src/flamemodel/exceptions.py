@@ -108,6 +108,13 @@ class HasNoLatFieldError(FlameModelException):
     pass
 
 
+class AdapterTypeError(FlameModelException):
+    def __init__(self, msg, *, cur_type, original_type):
+        self.message = msg
+        self.cur_type = cur_type
+        self.original_type = original_type
+
+
 def model_repeat_set_check(model, key, err_cls, target_cls):
     val = getattr(model, key, None)
     if val is not None and isinstance(val, target_cls):

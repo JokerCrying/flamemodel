@@ -1,5 +1,6 @@
 from typing import Union, Any, Optional, TypeVar, Mapping
 from ..models import RedisModelRepository, Hash
+from ..exceptions import AdapterTypeError
 
 _HashModel = TypeVar('_HashModel', bound=Hash)
 
@@ -15,17 +16,6 @@ class HashAdaptor(Mapping):
     :param pk: hash model primary key
     """
 
-    def __len__(self):
-        return len(self.keys())
-
-    def __iter__(self):
-        for i in self.keys():
-            yield i
-
-    async def __aiter__(self):
-        async for i in self.keys():
-            yield i
-
     def __init__(
             self,
             model_type: Union[str, _HashModel],
@@ -36,6 +26,12 @@ class HashAdaptor(Mapping):
             self.model_type = repo.parse_model_string(model_type)['model_cls']
         else:
             self.model_type = model_type
+        if not issubclass(self.model_type, Hash):
+            raise AdapterTypeError(
+                f"The model {self.model_type} is not Hash subclass.",
+                cur_type=self.model_type,
+                original_type=Hash
+            )
         self.pk = pk
 
     def get(self, key, default: Any = None) -> Optional[_HashModel]:
@@ -46,6 +42,17 @@ class HashAdaptor(Mapping):
         if result is None:
             raise KeyError(item)
         return result
+
+    def __len__(self):
+        return len(self.keys())
+
+    def __iter__(self):
+        for i in self.keys():
+            yield i
+
+    async def __aiter__(self):
+        async for i in self.keys():
+            yield i
 
     def __contains__(self, item):
         try:

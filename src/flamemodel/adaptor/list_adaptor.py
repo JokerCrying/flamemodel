@@ -1,5 +1,6 @@
 from typing import Union, Any, Sequence, TypeVar, Type
 from ..models import List, RedisModelRepository
+from ..exceptions import AdapterTypeError
 
 _ListModel = TypeVar('_ListModel', bound=List)
 
@@ -24,6 +25,12 @@ class ListAdaptor:
             self.model_type = repo.parse_model_string(model_type)['model_cls']
         else:
             self.model_type = model_type
+        if not issubclass(self.model_type, List):
+            raise AdapterTypeError(
+                f"The model {self.model_type} is not List subclass.",
+                cur_type=self.model_type,
+                original_type=List
+            )
         self.pk = pk
 
     def append(self, value: _ListModel):
