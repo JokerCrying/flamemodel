@@ -16,5 +16,3 @@ class StringDriver(BaseDriver):
 
     def set_range(self, key: str, offset: int, value: str):
         return self.adaptor.proxy.setrange(key, offset, value)
-
-

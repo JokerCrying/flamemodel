@@ -2,10 +2,11 @@ from pydantic import BaseModel
 from typing import ClassVar, Any, Optional
 from ..adaptor.interface import RedisAdaptor
 from ..exceptions import (
+    model_repeat_set_check,
     RepeatedSetAdaptorError,
     RepeatedSetModelMetadataError,
     RepeatedSetKeyBuilderError,
-    RepeatedSetSerializerError
+    RepeatedSetSerializerError,
 )
 from .metadata import ModelMetadata
 from ..d_type import SelfInstance, RedisDataType
@@ -70,17 +71,13 @@ class BaseRedisModel(BaseModel):
 
     def __setitem__(self, key, value):
         if key == '__redis_adaptor__':
-            if self.__redis_adaptor__ is not None and isinstance(self.__redis_adaptor__, RedisAdaptor):
-                raise RepeatedSetAdaptorError("Don't repeat set __redis_adaptor__.")
+            model_repeat_set_check(self, key, RepeatedSetAdaptorError, RedisAdaptor)
         if key == '__model_meta__':
-            if self.__model_meta__ is not None and isinstance(self.__model_meta__, ModelMetadata):
-                raise RepeatedSetModelMetadataError("Don't repeat set __model_meta__.")
+            model_repeat_set_check(self, key, RepeatedSetModelMetadataError, ModelMetadata)
         if key == '__key_builder__':
-            if self.__key_builder__ is not None and isinstance(self.__key_builder__, KeyBuilderProtocol):
-                raise RepeatedSetKeyBuilderError("Don't repeat set __key_builder__.")
+            model_repeat_set_check(self, key, RepeatedSetKeyBuilderError, KeyBuilderProtocol)
         if key == '__serializer__':
-            if self.__serializer__ is not None and isinstance(self.__serializer__, SerializerProtocol):
-                raise RepeatedSetSerializerError("Don't repeat set __serializer__.")
+            model_repeat_set_check(self, key, RepeatedSetSerializerError, SerializerProtocol)
         super().__setitem__(key, value)
 
     def pk_info(self):

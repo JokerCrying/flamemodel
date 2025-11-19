@@ -23,3 +23,14 @@ class SetDriver(BaseDriver):
     def srandmember(self, key: str, count: int = 1):
         return self.adaptor.proxy.srandmember(key, count)
 
+    def sunion(self, *keys):
+        return self.adaptor.proxy.sunion(*keys)
+
+    def sinter(self, *keys):
+        return self.adaptor.proxy.sinter(*keys)
+
+    def sdiff(self, *keys):
+        return self.adaptor.proxy.sdiff(*keys)
+
+    def smove(self, source: str, destination: str, member: str):
+        return self.adaptor.proxy.smove(source, destination, member)

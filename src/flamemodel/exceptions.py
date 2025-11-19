@@ -66,3 +66,49 @@ class TooManyPrimaryKeyError(FlameModelException):
 
 class HasNoPrimaryKeyError(FlameModelException):
     pass
+
+
+class TooManyHashFieldError(FlameModelException):
+    pass
+
+
+class HasNoHashFieldError(FlameModelException):
+    pass
+
+
+class TooManyScoreFieldFieldError(FlameModelException):
+    pass
+
+
+class HasNoScoreFieldError(FlameModelException):
+    pass
+
+
+class TooManyMemberFieldFieldError(FlameModelException):
+    pass
+
+
+class HasNoMemberFieldError(FlameModelException):
+    pass
+
+
+class TooManyLngFieldFieldError(FlameModelException):
+    pass
+
+
+class HasNoLngFieldError(FlameModelException):
+    pass
+
+
+class TooManyLatFieldFieldError(FlameModelException):
+    pass
+
+
+class HasNoLatFieldError(FlameModelException):
+    pass
+
+
+def model_repeat_set_check(model, key, err_cls, target_cls):
+    val = getattr(model, key, None)
+    if val is not None and isinstance(val, target_cls):
+        raise err_cls(f"Don't repeat set {key}")

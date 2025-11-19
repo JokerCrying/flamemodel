@@ -22,3 +22,20 @@ class ZSetDriver(BaseDriver):
 
     def zrank(self, key: str, member: str):
         return self.adaptor.proxy.zrank(key, member)
+
+    def zrevrank(self, key: str, member: str):
+        return self.adaptor.proxy.zrevrank(key, member)
+
+    def zcard(self, key: str):
+        return self.adaptor.proxy.zcard(key)
+
+    def zcount(self, key: str, min_score: float, max_score: float):
+        return self.adaptor.proxy.zcount(key, min_score, max_score)
+
+    def zrangebyscore(self, key: str, min_score: float, max_score: float, 
+                      withscores: bool = False, offset: int = 0, count: int = None):
+        kwargs = {'withscores': withscores}
+        if count is not None:
+            kwargs['start'] = offset
+            kwargs['num'] = count
+        return self.adaptor.proxy.zrangebyscore(key, min_score, max_score, **kwargs)

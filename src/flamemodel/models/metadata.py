@@ -25,6 +25,10 @@ class FieldMetaData(MetadataMinix):
     exclude_from_dump: bool = False
     ignore_in_key: bool = False
     hash_field: bool = False
+    score_field: bool = False
+    member_field: bool = False
+    lng_field: bool = False
+    lat_field: bool = False
 
 
 @dataclass
@@ -33,3 +37,8 @@ class ModelMetadata(MetadataMinix):
     indexes: List[Dict[str, FieldMetaData]]
     unique_indexes: List[Dict[str, FieldMetaData]]
     shard_tags: List[str]
+    hash_field: Dict[str, FieldMetaData]
+    score_field: Dict[str, FieldMetaData]
+    member_field: Dict[str, FieldMetaData]
+    lng_field: Dict[str, FieldMetaData]
+    lat_field: Dict[str, FieldMetaData]

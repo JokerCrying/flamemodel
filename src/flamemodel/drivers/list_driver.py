@@ -25,3 +25,6 @@ class ListDriver(BaseDriver):
 
     def lrem(self, key: str, count: int, value: str):
         return self.adaptor.proxy.lrem(key, count, value)
+
+    def lset(self, key: str, index: int, value: str):
+        return self.adaptor.proxy.lset(key, index, value)

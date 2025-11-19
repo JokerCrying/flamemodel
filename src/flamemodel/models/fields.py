@@ -27,6 +27,10 @@ def fields(
         exclude_from_dump: bool = False,
         ignore_in_key: bool = False,
         hash_field: bool = False,
+        score_field: bool = False,
+        member_field: bool = False,
+        lng_field: bool = False,
+        lat_field: bool = False,
         **kwargs: Unpack[PydanticFieldKwargs],
 ) -> pydantic_fields.FieldInfo:
     if primary_key:
@@ -46,7 +50,11 @@ def fields(
         exclude_from_dump=exclude_from_dump,
         ignore_in_key=ignore_in_key,
         primary_key_factory=primary_key_factory,
-        hash_field=hash_field
+        hash_field=hash_field,
+        score_field=score_field,
+        member_field=member_field,
+        lng_field=lng_field,
+        lat_field=lat_field
     )
     param_normalized = param_normalize_json_schema_extra(
         existing_json_schema_extra=existing_json_schema_extra,

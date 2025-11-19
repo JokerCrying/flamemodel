@@ -5,7 +5,7 @@ from .geo_driver import GeoDriver
 from .z_set_driver import ZSetDriver
 from .bitmap_driver import BitmapDriver
 from .string_model_driver import StringDriver
-from .hash_model import HashDriver
+from .hash_driver import HashDriver
 from .hyper_log_log_driver import HyperLogLogDriver
 from .list_model import ListDriver
 
