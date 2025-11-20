@@ -1,4 +1,5 @@
 import uuid
+import warnings
 from ..d_type import PydanticFieldKwargs
 from pydantic import Field, fields as pydantic_fields
 from typing import Any, Unpack, Optional, Callable
@@ -11,7 +12,6 @@ from ..constant import (
 )
 from .foreign import ForeignKey
 from .metadata import FieldMetaData
-from ..utils.logger import logger
 
 
 def fields(
@@ -37,7 +37,10 @@ def fields(
 ) -> pydantic_fields.FieldInfo:
     if primary_key:
         if primary_key_factory is None:
-            logger.warning('uuid.uuid4 will be automatically used as the primary key generator')
+            warnings.warn(
+                f"The function `uuid.uuid4` will be automatically used as the primary key generator, "
+                "use `fields(primary_key_factory=callable_func)` to set it, please."
+            )
             primary_key_factory = uuid.uuid4
         kwargs['default_factory'] = primary_key_factory
     existing_json_schema_extra = kwargs.pop('json_schema_extra', None)
