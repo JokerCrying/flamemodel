@@ -39,7 +39,8 @@ def fields(
         if primary_key_factory is None:
             warnings.warn(
                 f"The function `uuid.uuid4` will be automatically used as the primary key generator, "
-                "use `fields(primary_key_factory=callable_func)` to set it, please."
+                "use `fields(primary_key_factory=callable_func)` to set it, please.",
+                UserWarning
             )
             primary_key_factory = uuid.uuid4
         kwargs['default_factory'] = primary_key_factory
