@@ -6,7 +6,9 @@ from ..exceptions import (
     TooManyScoreFieldFieldError, HasNoScoreFieldError,
     TooManyLatFieldFieldError, HasNoLatFieldError,
     TooManyLngFieldFieldError, HasNoLngFieldError,
-    TooManyMemberFieldFieldError, HasNoMemberFieldError
+    TooManyMemberFieldFieldError, HasNoMemberFieldError,
+    TooManyEntryFieldError, HasNoEntryFieldError,
+    HasNoFlagFieldsError
 )
 from ..models.metadata import FieldMetaData, ModelMetadata
 
@@ -23,6 +25,7 @@ def parse_model_metadata(model_instance: Type['BaseRedisModel']) -> ModelMetadat
         f: p[FlameModelJsonSchemaKey]
         for f, p in model_fields.items()
     }
+    fields = []
     pk = None
     indexes = []
     shard_tags = []
@@ -32,9 +35,12 @@ def parse_model_metadata(model_instance: Type['BaseRedisModel']) -> ModelMetadat
     member_field = None
     lng_field = None
     lat_field = None
+    entry_field = None
+    flags = []
     model_name = model_instance.__class__.__name__
     for field, metadata in model_fields_metadata.items():
         item = {field: metadata}
+        fields.append(item)
         if metadata.primary_key:
             if pk is not None:
                 raise TooManyPrimaryKeyError(
@@ -85,6 +91,17 @@ def parse_model_metadata(model_instance: Type['BaseRedisModel']) -> ModelMetadat
                         "only one field can be lat field(geo)."
                     )
                 lat_field = item
+        if model_instance.__redis_type__ == 'bitmap':
+            if metadata.flag is not None:
+                flags.append(item)
+        if model_instance.__redis_type__ == 'stream':
+            if metadata.entry:
+                if entry_field is not None:
+                    raise TooManyEntryFieldError(
+                        f"The model {model_name} has many entry field, "
+                        "only one field can be entry field(stream)."
+                    )
+                entry_field = item
     if pk is None:
         raise HasNoPrimaryKeyError(
             f"the model {model_name} should have one primary key."
@@ -122,14 +139,32 @@ def parse_model_metadata(model_instance: Type['BaseRedisModel']) -> ModelMetadat
                 "but its has no lat field, "
                 "use `fields(lat_field=True)` to mark it, please."
             )
+    if model_instance.__redis_type__ == 'bitmap':
+        if not flags:
+            raise HasNoFlagFieldsError(
+                f"The model {model_name} is BitMap model type, "
+                "but its has no flag fields, "
+                "use `fields(flag=int_type)` to mark it, please."
+            )
+        flags = sorted(flags, key=lambda x: x.flag)
+    if model_instance.__redis_type__ == 'stream':
+        if entry_field is None:
+            raise HasNoEntryFieldError(
+                f"The model {model_name} is Stream model type, "
+                "but its has no entry field, "
+                "use `fields(entry=True)` to mark it, please."
+            )
     return ModelMetadata(
         pk_info=pk,
-        indexes=indexes,
-        shard_tags=shard_tags,
-        unique_indexes=unique_indexes,
+        indexes=tuple(indexes),
+        shard_tags=tuple(shard_tags),
+        unique_indexes=tuple(unique_indexes),
         hash_field=hash_field,
         score_field=score_field,
         member_field=member_field,
         lng_field=lng_field,
-        lat_field=lat_field
+        lat_field=lat_field,
+        flags=tuple(flags),
+        fields=tuple(fields),
+        entry_field=entry_field
     )

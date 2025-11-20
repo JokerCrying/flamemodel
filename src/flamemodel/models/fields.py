@@ -31,6 +31,8 @@ def fields(
         member_field: bool = False,
         lng_field: bool = False,
         lat_field: bool = False,
+        flag: Optional[int] = None,
+        entry: bool = None,
         **kwargs: Unpack[PydanticFieldKwargs],
 ) -> pydantic_fields.FieldInfo:
     if primary_key:
@@ -54,7 +56,9 @@ def fields(
         score_field=score_field,
         member_field=member_field,
         lng_field=lng_field,
-        lat_field=lat_field
+        lat_field=lat_field,
+        flag=flag,
+        entry=entry
     )
     param_normalized = param_normalize_json_schema_extra(
         existing_json_schema_extra=existing_json_schema_extra,

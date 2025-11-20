@@ -108,6 +108,18 @@ class HasNoLatFieldError(FlameModelException):
     pass
 
 
+class HasNoFlagFieldsError(FlameModelException):
+    pass
+
+
+class TooManyEntryFieldError(FlameModelException):
+    pass
+
+
+class HasNoEntryFieldError(FlameModelException):
+    pass
+
+
 class AdapterTypeError(FlameModelException):
     def __init__(self, msg, *, cur_type, original_type):
         self.message = msg
