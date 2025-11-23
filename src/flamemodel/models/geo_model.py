@@ -1,6 +1,7 @@
 from typing import Any, List, Optional, Tuple
 from .redis_model import BaseRedisModel
 from ..d_type import SelfInstance
+from ..utils.action import Action
 
 
 class Geo(BaseRedisModel):
@@ -31,13 +32,17 @@ class Geo(BaseRedisModel):
         driver = self.get_driver()
         # step1. Save Geo data and hash key id
         lon, lat, member_id = self.geo_tuple
-        driver.geoadd(pk_key, lon, lat, member_id)
+        geo_act = driver.geoadd(pk_key, lon, lat, member_id)
         # step2. Save full data to hash
         hash_key = f"{pk_key}:data"
         hash_driver = self.__redis_adaptor__.get_redis_driver('hash')
         serialized = self.__serializer__.serialize(self)
-        hash_driver.hset(hash_key, member_id, serialized)
-        return self
+        hash_act = hash_driver.hset(hash_key, member_id, serialized)
+        return Action.transaction(
+            [geo_act, hash_act],
+            runtime_mode=self.__redis_adaptor__.runtime_mode,
+            client=self.__redis_adaptor__.proxy
+        ).then(lambda _: self).execute()
 
     @classmethod
     def add(cls, pk: Any, *members: SelfInstance) -> int:
@@ -48,52 +53,84 @@ class Geo(BaseRedisModel):
         hash_key = f"{pk_key}:data"
         # Geo batch add
         geo_values = []
+        acts = []
         for member in members:
             lon, lat, member_id = member.geo_tuple
             geo_values.extend([lon, lat, member_id])
             # Hash batch add
-            hash_driver.hset(hash_key, member_id, cls.__serializer__.serialize(member))
-        return driver.geoadd(pk_key, *geo_values)
+            acts.append(
+                hash_driver.hset(hash_key, member_id, cls.__serializer__.serialize(member))
+            )
+        acts.append(driver.geoadd(pk_key, *geo_values))
+        return Action.sequence(
+            acts,
+            runtime_mode=cls.__redis_adaptor__.runtime_mode,
+            result_from_index=-1,
+            client=cls.__redis_adaptor__.proxy
+        ).execute()
 
     @classmethod
     def search_radius(cls, pk: Any, longitude: float, latitude: float,
                       radius: float, unit: str = "m",
                       count: Optional[int] = None) -> List[SelfInstance]:
+
         """Search around the specified coordinates and return the complete object"""
+
+        def _post_operation(res):
+            hash_key = f"{pk_key}:data"
+            hash_driver = cls.__redis_adaptor__.get_redis_driver('hash')
+            actions = []
+            for member_id in res:
+                data = hash_driver.hget(hash_key, member_id)
+                actions.append(
+                    data.then(
+                        lambda x: cls.__serializer__.deserialize(x, cls)
+                    )
+                )
+            return Action.sequence(
+                actions,
+                runtime_mode=cls.__redis_adaptor__.runtime_mode,
+                result_from_index=None,
+                client=cls.__redis_adaptor__.proxy
+            ).then(lambda x: x[:count]).execute()
+
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
-        # step1. get member ids from geo
-        member_ids = driver.georadius(pk_key, longitude, latitude, radius, unit)
-        # step2. get full data in hash
-        hash_key = f"{pk_key}:data"
-        hash_driver = cls.__redis_adaptor__.get_redis_driver('hash')
-        results = []
-        for member_id in member_ids:
-            data = hash_driver.hget(hash_key, member_id)
-            if data:
-                results.append(cls.__serializer__.deserialize(data, cls))
-        return results[:count]
+        return driver.georadius(
+            pk_key, longitude,
+            latitude, radius, unit
+        ).then(_post_operation).execute()
 
     @classmethod
     def get_by_member(cls, pk: Any, member_id: str) -> Optional[SelfInstance]:
         """Get the full data through member_id"""
+
+        def _final_handler(r):
+            result = cls.__serializer__.deserialize(r, cls)
+            if result:
+                return result
+            return None
+
         pk_key = cls.primary_key(pk)
         hash_key = f"{pk_key}:data"
         hash_driver = cls.__redis_adaptor__.get_redis_driver('hash')
-
-        data = hash_driver.hget(hash_key, member_id)
-        if data:
-            return cls.__serializer__.deserialize(data, cls)
-        return None
+        return hash_driver.hget(hash_key, member_id).then(_final_handler).execute()
 
     def delete_self(self) -> int:
         """Delete the current location point (remove from Geo and Hash)"""
         pk_key = self.get_primary_key()
+        acts = []
         _, _, member_id = self.geo_tuple
         # step1. delete geo data
         driver = self.__redis_adaptor__.get_redis_driver('zset')
-        driver.zrem(pk_key, member_id)
+        acts.append(driver.zrem(pk_key, member_id))
         # step2. delete hash data
         hash_key = f"{pk_key}:data"
         hash_driver = self.__redis_adaptor__.get_redis_driver('hash')
-        return hash_driver.hdel(hash_key, member_id)
+        acts.append(hash_driver.hdel(hash_key, member_id))
+        return Action.sequence(
+            acts,
+            runtime_mode=self.__redis_adaptor__.runtime_mode,
+            result_from_index=-1,
+            client=self.__redis_adaptor__.proxy
+        ).execute()

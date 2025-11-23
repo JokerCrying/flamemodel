@@ -1,5 +1,5 @@
 import inspect
-from enum import Enum, auto
+from enum import Enum
 from typing import Any, Callable, List, Optional, TYPE_CHECKING, Union, Literal
 
 if TYPE_CHECKING:
@@ -36,12 +36,13 @@ class Action:
         self._handler = handler
         self._sub_actions = sub_actions or []
         if isinstance(execution_mode, str):
-            if execution_mode not in ExecutionMode:
+            try:
+                self._execution_mode = ExecutionMode(execution_mode)
+            except ValueError:
                 raise ValueError(
                     "Action execute mode type must be "
-                    f"'single', 'sequence', 'transaction', isn't {execution_mode}"
+                    f"'single', 'sequence', 'transaction', got {execution_mode}"
                 )
-            self._execution_mode = ExecutionMode(execution_mode)
         else:
             self._execution_mode = execution_mode
         self._result_from_index = result_from_index
@@ -102,29 +103,49 @@ class Action:
         )
 
     @classmethod
-    def transaction(cls, actions: List['Action'], runtime_mode, client: Any) -> 'Action':
+    def transaction(cls, actions: List['Action'], runtime_mode, client: Any, result_from_index: int = -1) -> 'Action':
         return cls(
             runtime_mode=runtime_mode,
             sub_actions=actions,
             execution_mode=ExecutionMode.TRANSACTION,
-            client=client
+            client=client,
+            result_from_index=result_from_index
         )
 
     def clone(self) -> 'Action':
         return Action(
             runtime_mode=self.runtime_mode,
             executor=self._executor,
+            command=self._command,
             args=self._args,
             kwargs=self._kwargs,
             handler=self._handler,
             sub_actions=self._sub_actions,
             execution_mode=self._execution_mode,
             result_from_index=self._result_from_index,
-            client=self.client
+            client=self.client,
+            adaptor=self._adaptor
         )
 
-    def _apply_handler(self, value: Any) -> Any:
-        return self._handler(value) if self._handler else value
+    async def _apply_handler_async(self, value: Any) -> Any:
+        if not self._handler:
+            return value
+        out = self._handler(value)
+        if isinstance(out, Action):
+            return await out._execute_async()
+        if inspect.isawaitable(out):
+            return await out
+        return out
+
+    def _apply_handler_sync(self, value: Any) -> Any:
+        if not self._handler:
+            return value
+        out = self._handler(value)
+        if isinstance(out, Action):
+            return out._execute_sync()
+        if inspect.isawaitable(out):
+            raise RuntimeError("Handler returned awaitable in sync runtime mode")
+        return out
 
     def _execute_sync(self) -> Any:
         if self._execution_mode == ExecutionMode.SINGLE:
@@ -137,7 +158,11 @@ class Action:
                 result = method(*self._args, **self._kwargs)
             else:
                 result = None
-            return self._apply_handler(result)
+            if isinstance(result, Action):
+                result = result._execute_sync()
+            if inspect.isawaitable(result):
+                raise RuntimeError("Executor returned awaitable in sync runtime mode")
+            return self._apply_handler_sync(result)
         if self._execution_mode == ExecutionMode.SEQUENCE:
             results = []
             for a in self._sub_actions:
@@ -148,7 +173,7 @@ class Action:
                 agg = results[self._result_from_index]
             else:
                 agg = results
-            return self._apply_handler(agg)
+            return self._apply_handler_sync(agg)
         if self._execution_mode == ExecutionMode.TRANSACTION:
             if not self.client:
                 if self._adaptor is not None:
@@ -175,7 +200,7 @@ class Action:
                 agg = post[self._result_from_index]
             else:
                 agg = post
-            return self._apply_handler(agg)
+            return self._apply_handler_sync(agg)
         raise TypeError("execution mode not supported.")
 
     async def _execute_async(self) -> Any:
@@ -191,7 +216,9 @@ class Action:
                 res = None
             if inspect.isawaitable(res):
                 res = await res
-            return self._apply_handler(res)
+            if isinstance(res, Action):
+                res = await res._execute_async()
+            return await self._apply_handler_async(res)
         if self._execution_mode == ExecutionMode.SEQUENCE:
             results = []
             for a in self._sub_actions:
@@ -202,7 +229,7 @@ class Action:
                 agg = results[self._result_from_index]
             else:
                 agg = results
-            return self._apply_handler(agg)
+            return await self._apply_handler_async(agg)
         if self._execution_mode == ExecutionMode.TRANSACTION:
             if not self.client:
                 if self._adaptor is not None:
@@ -229,5 +256,5 @@ class Action:
                 agg = post[self._result_from_index]
             else:
                 agg = post
-            return self._apply_handler(agg)
+            return await self._apply_handler_async(agg)
         raise TypeError("execution mode not supported.")

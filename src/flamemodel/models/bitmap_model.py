@@ -1,6 +1,7 @@
 from typing import Any, Tuple, Dict, Literal
 from .redis_model import BaseRedisModel
 from ..d_type import SelfInstance
+from ..utils.action import Action
 
 
 class BitMap(BaseRedisModel):
@@ -10,7 +11,7 @@ class BitMap(BaseRedisModel):
     def count_by(cls, pk: Any) -> int:
         driver = cls.get_driver()
         key = cls.primary_key(pk)
-        return driver.bitcount(key)
+        return driver.bitcount(key).execute()
 
     @classmethod
     def get(cls, pk: Any) -> SelfInstance:
@@ -18,35 +19,58 @@ class BitMap(BaseRedisModel):
         pk_field_info = cls.__model_meta__.pk_info
         pk_field_name = list(pk_field_info.keys())[0]
         primary_key = cls.primary_key(pk)
-        result = {
-            pk_field_name: pk
-        }
+        acts = []
         for field_name, offset in cls._bitmap_offset().items():
-            result[field_name] = 1 if driver.getbit(primary_key, offset) else 0
-        return cls.__serializer__.deserialize(result, cls)
+            acts.append(
+                driver.getbit(primary_key, offset).then(
+                    lambda x, fn=field_name: (fn, 1 if x else 0)
+                )
+            )
+        return Action.sequence(
+            acts,
+            runtime_mode=cls.__redis_adaptor__.runtime_mode,
+            result_from_index=None
+        ).then(
+            lambda pairs: cls.__serializer__.deserialize(
+                dict(pairs) | {pk_field_name: pk}, cls
+            )
+        ).execute()
 
     def bitmap(self) -> Tuple[int]:
         driver = self.get_driver()
         pk = self.get_primary_key()
-        bits = []
+        acts = []
         for _, offset in self._bitmap_offset().items():
-            bits.append(
-                1 if driver.getbit(pk, offset) else 0
+            acts.append(
+                driver.getbit(pk, offset).then(
+                    lambda x: 1 if x else 0
+                )
             )
-        return tuple(bits)
+        return Action.sequence(
+            acts,
+            runtime_mode=self.__redis_adaptor__.runtime_mode,
+            result_from_index=None,
+        ).then(tuple).execute()
 
     def save(self) -> SelfInstance:
         driver = self.get_driver()
         pk = self.get_primary_key()
+        acts = []
         for field_name, offset in self._bitmap_offset().items():
             value = getattr(self, field_name)
-            driver.setbit(pk, offset, 1 if value else 0)
-        return self
+            acts.append(
+                driver.setbit(pk, offset, 1 if value else 0)
+            )
+        return Action.sequence(
+            acts,
+            runtime_mode=self.__redis_adaptor__.runtime_mode,
+            result_from_index=None
+        ).execute()
 
     def count(self) -> int:
         driver = self.get_driver()
         key = self.get_primary_key()
-        return driver.bitcount(key)
+        return driver.bitcount(key).execute()
 
     def and_(self, other: 'BitMap', dest_pk: Any) -> SelfInstance:
         dest_pk_key = self.primary_key(dest_pk)
@@ -93,8 +117,35 @@ class BitMap(BaseRedisModel):
             operate: Literal['AND', 'OR', 'NOT', 'XOR']
     ) -> SelfInstance:
         driver = cls.get_driver()
-        driver.bittop(operate, dest_pk, source_pk, target_pk)
-        return cls.get(dest_pk)
+        runtime_mode = cls.__redis_adaptor__.runtime_mode
+        if operate == 'NOT':
+            bitop_act = driver.bitop('NOT', dest_pk, source_pk)
+        else:
+            bitop_act = driver.bitop(operate, dest_pk, source_pk, target_pk)
+        pk_field_name = list(cls.__model_meta__.pk_info.keys())[0]
+        parsed = cls.__key_builder__.parse_key(dest_pk)
+        pk_value = parsed.get('pk')
+        acts = []
+        for field_name, offset in cls._bitmap_offset().items():
+            acts.append(
+                driver.getbit(dest_pk, offset).then(
+                    lambda x, fn=field_name: (fn, 1 if x else 0)
+                )
+            )
+        read_act = Action.sequence(
+            acts,
+            runtime_mode=runtime_mode,
+            result_from_index=None
+        ).then(
+            lambda pairs: cls.__serializer__.deserialize(
+                dict(pairs) | {pk_field_name: pk_value}, cls
+            )
+        )
+        return Action.sequence(
+            [bitop_act, read_act],
+            runtime_mode=runtime_mode,
+            result_from_index=1
+        ).execute()
 
     def __iter__(self):
         return iter(self.bitmap())

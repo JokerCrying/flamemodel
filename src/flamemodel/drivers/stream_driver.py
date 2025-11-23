@@ -16,3 +16,10 @@ class StreamDriver(BaseDriver):
 
     def xlen(self, key: str):
         return self.adaptor.proxy.xlen(key)
+
+    def xrevrange(self, key: str, max: str = "+", min: str = "-",
+                  count: int = None):
+        return self.adaptor.proxy.xrevrange(key, max=max, min=min, count=count)
+
+    def xtrim(self, key: str, maxlen: int, approximate: bool = True):
+        return self.adaptor.proxy.xtrim(key, maxlen=maxlen, approximate=approximate)

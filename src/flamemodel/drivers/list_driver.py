@@ -28,3 +28,6 @@ class ListDriver(BaseDriver):
 
     def lset(self, key: str, index: int, value: str):
         return self.adaptor.proxy.lset(key, index, value)
+
+    def ltrim(self, key: str, start: int, end: int):
+        return self.adaptor.proxy.ltrim(key, start, end)

@@ -16,7 +16,7 @@ class UserDataHash(Hash):
 class TestHashModel(unittest.TestCase):
     def setUp(self):
         self.fm = FlameModel(
-            runtime_mode='sync',
+            runtime_mode='async',
             endpoint='redis://:@localhost:6379/1'
         )
 
@@ -27,4 +27,5 @@ class TestHashModel(unittest.TestCase):
         user.save()
 
     def test_get(self):
-        print(UserDataHash.get(1, 1))
+        import asyncio
+        print(asyncio.run(UserDataHash.get(1, 1)))

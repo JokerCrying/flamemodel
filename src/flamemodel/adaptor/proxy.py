@@ -30,9 +30,9 @@ class Proxy(Generic[RedisClientInstance]):
         redis_proxy = getattr(self._client, item)
         if not callable(redis_proxy):
             return redis_proxy
-        return self._wrap_action(redis_proxy)
+        return self._wrap_action(redis_proxy, item)
 
-    def _wrap_action(self, function: Callable) -> Callable:
+    def _wrap_action(self, function: Callable, command: str) -> Callable:
         def wrapper(*args, **kwargs):
             return Action(
                 runtime_mode=self.runtime_mode,
@@ -40,7 +40,8 @@ class Proxy(Generic[RedisClientInstance]):
                 args=args,
                 kwargs=kwargs,
                 execution_mode='single',
-                adaptor=self.adaptor
+                adaptor=self.adaptor,
+                command=command
             )
 
         return wrapper

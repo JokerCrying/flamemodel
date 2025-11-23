@@ -21,36 +21,40 @@ class Hash(BaseRedisModel):
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
         result = driver.hgetall(pk_key)
-        return [
-            cls.__serializer__.deserialize(r, cls)
-            for r in result
-        ]
+        return result.then(
+            lambda x: [
+                cls.__serializer__.deserialize(i, cls)
+                for i in x.values()
+            ]
+        ).execute()
 
     @classmethod
     def keys(cls, pk: Any) -> List[str]:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
-        return driver.hkeys(pk_key)
+        return driver.hkeys(pk_key).execute()
 
     @classmethod
     def values(cls, pk: Any) -> List[SelfInstance]:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
         result = driver.hvals(pk_key)
-        return [
-            cls.__serializer__.deserialize(r, cls)
-            for r in result
-        ]
+        return result.then(
+            lambda x: [
+                cls.__serializer__.deserialize(i, cls)
+                for i in x
+            ]
+        ).execute()
 
     def exists(self, field: Any) -> bool:
         driver = self.get_driver()
-        return driver.hexists(self.get_primary_key(), field)
+        return driver.hexists(self.get_primary_key(), field).execute()
 
     def hash_delete(self):
         _, value = self.hash_field
         driver = self.get_driver()
         pk = self.get_primary_key()
-        return driver.hdel(pk, value)
+        return driver.hdel(pk, value).execute()
 
     def save(self) -> SelfInstance:
         _, field = self.hash_field
