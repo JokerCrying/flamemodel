@@ -35,7 +35,11 @@ class RedisAdaptor:
 
     def _init_proxy(self) -> RedisClientInstance:
         mode_map = RedisClientTypeMap[self.is_cluster]
-        return Proxy(mode_map[self.runtime_mode], self.url_kwargs, self.connect_options)  # type: ignore
+
+        return Proxy(mode_map[self.runtime_mode],
+                     self.url_kwargs, self.connect_options,
+                     runtime_mode=self.runtime_mode,
+                     adaptor=self) # type: ignore
 
     def get_redis_driver(self, redis_type: RedisDataType):
         driver_cls = get_driver(redis_type)

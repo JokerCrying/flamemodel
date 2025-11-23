@@ -1,16 +1,17 @@
 import inspect
 from enum import Enum, auto
-from typing import Any, Callable, List, Optional, TYPE_CHECKING
-
+from typing import Any, Callable, List, Optional, TYPE_CHECKING, Union, Literal
 
 if TYPE_CHECKING:
     from ..adaptor.interface import RedisAdaptor
 
 class ExecutionMode(Enum):
-    SINGLE = auto()
-    SEQUENCE = auto()
-    TRANSACTION = auto()
+    SINGLE = 'single'
+    SEQUENCE = 'sequence'
+    TRANSACTION = 'transaction'
 
+
+ExecutionModeType = Union[Literal['single', 'sequence', 'transaction'], ExecutionMode]
 
 class Action:
     def __init__(
@@ -22,7 +23,7 @@ class Action:
             kwargs: Optional[dict] = None,
             handler: Optional[Callable[[Any], Any]] = None,
             sub_actions: Optional[List['Action']] = None,
-            execution_mode: ExecutionMode = ExecutionMode.SINGLE,
+            execution_mode: ExecutionModeType = ExecutionMode.SINGLE,
             result_from_index: Optional[int] = -1,
             client: Any = None,
             adaptor: 'RedisAdaptor' = None
@@ -34,7 +35,15 @@ class Action:
         self._kwargs = kwargs or {}
         self._handler = handler
         self._sub_actions = sub_actions or []
-        self._execution_mode = execution_mode
+        if isinstance(execution_mode, str):
+            if execution_mode not in ExecutionMode:
+                raise ValueError(
+                    "Action execute mode type must be "
+                    f"'single', 'sequence', 'transaction', isn't {execution_mode}"
+                )
+            self._execution_mode = ExecutionMode(execution_mode)
+        else:
+            self._execution_mode = execution_mode
         self._result_from_index = result_from_index
         self.client = client
         self._adaptor = adaptor
@@ -122,7 +131,7 @@ class Action:
             if self.client is None and self._adaptor is not None:
                 self.client = self._adaptor.proxy
             if self._executor:
-                result = self._executor(self.client, *self._args, **self._kwargs)
+                result = self._executor(*self._args, **self._kwargs)
             elif self._command:
                 method = getattr(self.client, self._command)
                 result = method(*self._args, **self._kwargs)
@@ -174,7 +183,7 @@ class Action:
             if self.client is None and self._adaptor is not None:
                 self.client = self._adaptor.proxy
             if self._executor:
-                res = self._executor(self.client, *self._args, **self._kwargs)
+                res = self._executor(*self._args, **self._kwargs)
             elif self._command:
                 method = getattr(self.client, self._command)
                 res = method(*self._args, **self._kwargs)

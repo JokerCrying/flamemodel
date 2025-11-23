@@ -44,10 +44,11 @@ class FlameModel:
         BaseRedisModel.set_redis_adaptor(self.adaptor)
 
     def _register_models(self):
-        models = BaseRedisModel.__subclasses__()
-        for cls in models:
-            model_name = cls.__schema__ or cls.__name__
-            self.redis_model_repository.register_model(model_name, cls)
+        bases_models = BaseRedisModel.__subclasses__()
+        for bases_model in bases_models:
+            for cls in bases_model.__subclasses__():
+                model_name = cls.__schema__ or cls.__name__
+                self.redis_model_repository.register_model(model_name, cls)
 
     def _set_model_key_builder(self):
         key_builder_instance = self.key_builder_cls(**self.key_builder_options)

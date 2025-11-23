@@ -1,5 +1,9 @@
-from typing import Generic
-from ..d_type import RedisClientType, RedisClientInstance, RedisConnectKwargs, DictAny
+from ..utils.action import Action
+from typing import Generic, Callable, TYPE_CHECKING, Any, Union
+from ..d_type import RedisClientType, RedisClientInstance, RedisConnectKwargs, DictAny, RuntimeMode
+
+if TYPE_CHECKING:
+    from .interface import RedisAdaptor
 
 
 class Proxy(Generic[RedisClientInstance]):
@@ -7,8 +11,12 @@ class Proxy(Generic[RedisClientInstance]):
             self,
             runtime_cls: RedisClientType,
             url_kwargs: RedisConnectKwargs,
-            connect_kwargs: DictAny
+            connect_kwargs: DictAny,
+            runtime_mode: RuntimeMode,
+            adaptor: 'RedisAdaptor'
     ):
+        self.adaptor = adaptor
+        self.runtime_mode = runtime_mode
         self.runtime_cls = runtime_cls
         self._final_kwargs = {
             **url_kwargs,
@@ -16,7 +24,23 @@ class Proxy(Generic[RedisClientInstance]):
         }
         self._client: RedisClientInstance = runtime_cls(**self._final_kwargs)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item) -> Union[Action, Any]:
         if item in self.__dict__:
             return self.__dict__[item]
-        return getattr(self._client, item)
+        redis_proxy = getattr(self._client, item)
+        if not callable(redis_proxy):
+            return redis_proxy
+        return self._wrap_action(redis_proxy)
+
+    def _wrap_action(self, function: Callable) -> Callable:
+        def wrapper(*args, **kwargs):
+            return Action(
+                runtime_mode=self.runtime_mode,
+                executor=function,
+                args=args,
+                kwargs=kwargs,
+                execution_mode='single',
+                adaptor=self.adaptor
+            )
+
+        return wrapper

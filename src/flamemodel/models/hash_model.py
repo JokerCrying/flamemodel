@@ -11,8 +11,10 @@ class Hash(BaseRedisModel):
         hash_field, _ = cls._hash_field()
         driver = cls.get_driver()
         pk_key = cls.primary_key(pk)
-        result = driver.hget(pk_key, field)
-        return cls.__serializer__.deserialize(result, cls)
+        act = driver.hget(pk_key, field)
+        return act.then(
+            lambda r: cls.__serializer__.deserialize(r, cls)
+        ).execute()
 
     @classmethod
     def get_all(cls, pk: Any) -> List[SelfInstance]:
@@ -54,7 +56,7 @@ class Hash(BaseRedisModel):
         _, field = self.hash_field
         pk = self.get_primary_key()
         driver = self.get_driver()
-        return driver.hset(pk, field, self.__serializer__.serialize(self))
+        return driver.hset(pk, field, self.__serializer__.serialize(self)).execute()
 
     @classmethod
     def _hash_field(cls, value: Any = None):

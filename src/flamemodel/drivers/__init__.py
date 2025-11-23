@@ -7,7 +7,7 @@ from .bitmap_driver import BitmapDriver
 from .string_model_driver import StringDriver
 from .hash_driver import HashDriver
 from .hyper_log_log_driver import HyperLogLogDriver
-from .list_model import ListDriver
+from .list_driver import ListDriver
 
 __all__ = (
     'BaseDriver',

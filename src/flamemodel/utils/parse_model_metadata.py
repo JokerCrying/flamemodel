@@ -37,7 +37,7 @@ def parse_model_metadata(model_instance: Type['BaseRedisModel']) -> ModelMetadat
     lat_field = None
     entry_field = None
     flags = []
-    model_name = model_instance.__class__.__name__
+    model_name = model_instance.__name__
     for field, metadata in model_fields_metadata.items():
         item = {field: metadata}
         fields.append(item)
@@ -104,7 +104,7 @@ def parse_model_metadata(model_instance: Type['BaseRedisModel']) -> ModelMetadat
                 entry_field = item
     if pk is None:
         raise HasNoPrimaryKeyError(
-            f"the model {model_name} should have one primary key."
+            f"The model {model_name} should have one primary key."
         )
     if model_instance.__redis_type__ == 'hash':
         if hash_field is None:
