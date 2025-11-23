@@ -169,7 +169,7 @@ class Action:
                 if self.client and getattr(a, 'client', None) is None:
                     a = a.with_client(self.client)
                 results.append(a._execute_sync())
-            if isinstance(self._result_from_index, int) and 0 <= self._result_from_index < len(results):
+            if isinstance(self._result_from_index, int) and -1 <= self._result_from_index < len(results):
                 agg = results[self._result_from_index]
             else:
                 agg = results
@@ -180,23 +180,21 @@ class Action:
                     self.client = self._adaptor.proxy
                 else:
                     raise RuntimeError("Transaction requires a client.")
-            pipe = self.client.pipeline(transaction=True)
+            pipe_proxy = self.client.pipeline(transaction=True)
+            pipe = pipe_proxy.execute()
             for a in self._sub_actions:
-                if not (a._executor or a._command):
-                    continue
-                if a._executor:
-                    a._executor(pipe, *a._args, **a._kwargs)
-                else:
-                    getattr(pipe, a._command)(*a._args, **a._kwargs)
+                if not a._command:
+                    raise RuntimeError("Action transaction mode only support command.")
+                getattr(pipe, a._command)(*a._args, **a._kwargs)
             exec_result = pipe.execute()
             post = []
             i = 0
             for a in self._sub_actions:
-                if a._executor or a._command:
+                if a._command:
                     r = exec_result[i]
-                    post.append(a._handler(r) if a._handler else r)
+                    post.append(a._apply_handler_sync(r))
                     i += 1
-            if isinstance(self._result_from_index, int) and 0 <= self._result_from_index < len(post):
+            if isinstance(self._result_from_index, int) and -1 <= self._result_from_index < len(post):
                 agg = post[self._result_from_index]
             else:
                 agg = post
@@ -225,7 +223,7 @@ class Action:
                 if self.client and getattr(a, 'client', None) is None:
                     a = a.with_client(self.client)
                 results.append(await a._execute_async())
-            if isinstance(self._result_from_index, int) and 0 <= self._result_from_index < len(results):
+            if isinstance(self._result_from_index, int) and -1 <= self._result_from_index < len(results):
                 agg = results[self._result_from_index]
             else:
                 agg = results
@@ -236,23 +234,21 @@ class Action:
                     self.client = self._adaptor.proxy
                 else:
                     raise RuntimeError("Transaction requires a client.")
-            pipe = self.client.pipeline(transaction=True)
+            pipe_proxy = self.client.pipeline(transaction=True)
+            pipe = await pipe_proxy.execute()
             for a in self._sub_actions:
-                if not (a._executor or a._command):
-                    continue
-                if a._executor:
-                    a._executor(pipe, *a._args, **a._kwargs)
-                else:
-                    getattr(pipe, a._command)(*a._args, **a._kwargs)
+                if not a._command:
+                    raise RuntimeError("Action transaction mode only support command.")
+                await getattr(pipe, a._command)(*a._args, **a._kwargs)
             exec_result = await pipe.execute()
             post = []
             i = 0
             for a in self._sub_actions:
                 if a._executor or a._command:
                     r = exec_result[i]
-                    post.append(a._handler(r) if a._handler else r)
+                    post.append(await a._apply_handler_async(r))
                     i += 1
-            if isinstance(self._result_from_index, int) and 0 <= self._result_from_index < len(post):
+            if isinstance(self._result_from_index, int) and -1 <= self._result_from_index < len(post):
                 agg = post[self._result_from_index]
             else:
                 agg = post

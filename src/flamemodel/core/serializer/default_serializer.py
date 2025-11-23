@@ -95,6 +95,8 @@ class DefaultSerializer(SerializerProtocol):
             TypeError: 当数据类型不支持时
             ValueError: 当 JSON 解析失败时
         """
+        if data is None:
+            return None
         if isinstance(data, dict):
             # 字典数据直接使用 Pydantic 的 model_validate 方法
             return model_class.model_validate(data)
