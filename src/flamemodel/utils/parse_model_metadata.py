@@ -8,7 +8,7 @@ from ..exceptions import (
     TooManyLngFieldFieldError, HasNoLngFieldError,
     TooManyMemberFieldFieldError, HasNoMemberFieldError,
     TooManyEntryFieldError, HasNoEntryFieldError,
-    HasNoFlagFieldsError
+    HasNoFlagFieldsError, NotUsedFieldsError
 )
 from ..models.metadata import FieldMetaData, ModelMetadata
 
@@ -21,10 +21,16 @@ FieldsMetadataType = Dict[str, FieldMetaData]
 def parse_model_metadata(model_instance: Type['BaseRedisModel']) -> ModelMetadata:
     model_json_schema = model_instance.model_json_schema()
     model_fields = model_json_schema[PydanticPropertyField]
-    model_fields_metadata: FieldsMetadataType = {
-        f: p[FlameModelJsonSchemaKey]
-        for f, p in model_fields.items()
-    }
+    try:
+        model_fields_metadata: FieldsMetadataType = {
+            f: p[FlameModelJsonSchemaKey]
+            for f, p in model_fields.items()
+        }
+    except KeyError:
+        raise NotUsedFieldsError(
+            f"The model {model_instance} has doesn't used `fields` to mark fields, "
+            f"use `fields` to mark all columns, please."
+        )
     fields = []
     pk = None
     indexes = []

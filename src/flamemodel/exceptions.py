@@ -120,6 +120,10 @@ class HasNoEntryFieldError(FlameModelException):
     pass
 
 
+class NotUsedFieldsError(FlameModelException):
+    pass
+
+
 class AdapterTypeError(FlameModelException):
     def __init__(self, msg, *, cur_type, original_type):
         self.message = msg

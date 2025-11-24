@@ -20,5 +20,6 @@ __all__ = (
     'ZSet',
     'HyperLogLog',
     'BitMap',
-    'Stream'
+    'Stream',
+    'Geo'
 )

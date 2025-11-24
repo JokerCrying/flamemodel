@@ -57,3 +57,9 @@ class FlameModel:
     def _set_model_serializer(self):
         serializer_instance = self.serializer_cls(self.serializer_options)
         BaseRedisModel.set_serializer(serializer_instance)
+
+    def __repr__(self):
+        return f'<FlameModel runtime_mode={self.runtime_mode} endpoint={self.endpoint}>'
+
+    def __str__(self):
+        return repr(self)
