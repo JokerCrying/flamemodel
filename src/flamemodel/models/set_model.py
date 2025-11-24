@@ -12,7 +12,7 @@ class Set(BaseRedisModel):
         driver = cls.get_driver()
         results = driver.smembers(pk_key)
         return results.then(
-            lambda x: {cls.__serializer__.deserialize(r, cls) for r in x}
+            lambda x: [cls.__serializer__.deserialize(r, cls) for r in x]
         ).execute()
 
     @classmethod

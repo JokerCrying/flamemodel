@@ -9,7 +9,7 @@ class StreamDriver(BaseDriver):
         return self.adaptor.proxy.xread(streams=streams, count=count, block=block)
 
     def xrange(self, key: str, start: str = "-", end: str = "+", count: int = None):
-        return self.adaptor.proxy.xrange(key, start=start, end=end, count=count)
+        return self.adaptor.proxy.xrange(key, min=start, max=end, count=count)
 
     def xdel(self, key: str, *ids):
         return self.adaptor.proxy.xdel(key, *ids)

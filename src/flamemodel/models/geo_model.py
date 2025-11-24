@@ -32,7 +32,7 @@ class Geo(BaseRedisModel):
         driver = self.get_driver()
         # step1. Save Geo data and hash key id
         lon, lat, member_id = self.geo_tuple
-        geo_act = driver.geoadd(pk_key, lon, lat, member_id)
+        geo_act = driver.geoadd(pk_key, (lon, lat, member_id))
         # step2. Save full data to hash
         hash_key = f"{pk_key}:data"
         hash_driver = self.__redis_adaptor__.get_redis_driver('hash')
@@ -52,16 +52,14 @@ class Geo(BaseRedisModel):
         hash_driver = cls.__redis_adaptor__.get_redis_driver('hash')
         hash_key = f"{pk_key}:data"
         # Geo batch add
-        geo_values = []
         acts = []
         for member in members:
             lon, lat, member_id = member.geo_tuple
-            geo_values.extend([lon, lat, member_id])
             # Hash batch add
             acts.append(
                 hash_driver.hset(hash_key, member_id, cls.__serializer__.serialize(member))
             )
-        acts.append(driver.geoadd(pk_key, *geo_values))
+            acts.append(driver.geoadd(pk_key, (lon, lat, member_id)))
         return Action.sequence(
             acts,
             runtime_mode=cls.__redis_adaptor__.runtime_mode,

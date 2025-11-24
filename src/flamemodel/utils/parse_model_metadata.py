@@ -152,7 +152,7 @@ def parse_model_metadata(model_instance: Type['BaseRedisModel']) -> ModelMetadat
                 "but its has no flag fields, "
                 "use `fields(flag=int_type)` to mark it, please."
             )
-        flags = sorted(flags, key=lambda x: x.flag)
+        flags = sorted(flags, key=lambda x: list(x.values())[0].flag)
     if model_instance.__redis_type__ == 'stream':
         if entry_field is None:
             raise HasNoEntryFieldError(

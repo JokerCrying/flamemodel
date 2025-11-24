@@ -94,6 +94,7 @@ class Stream(BaseRedisModel):
     def add(self, entry_value: str = "*") -> str:
         def _final_handler(r):
             setattr(self, field_name, r)
+            return r
 
         pk_key = self.get_primary_key()
         driver = self.get_driver()
@@ -118,7 +119,7 @@ class Stream(BaseRedisModel):
             if field_name in (pk_field_name, entry_id_field_name):
                 continue
             value = getattr(instance, field_name)
-            fields[field_name] = cls.__serializer__.serialize(value)
+            fields[field_name] = value
         return fields
 
     @classmethod

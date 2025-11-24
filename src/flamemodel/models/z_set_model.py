@@ -16,7 +16,7 @@ class ZSet(BaseRedisModel):
     @property
     def score_value(self) -> float:
         field_name = self._score_field()
-        return float(getattr(self, field_name, 0.0))
+        return float(getattr(self, field_name) or 0.0)
 
     @classmethod
     def add(cls, pk: Any, *members: SelfInstance) -> int:
