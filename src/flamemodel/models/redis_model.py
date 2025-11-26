@@ -58,11 +58,11 @@ class BaseRedisModel(BaseModel):
             lambda x: cls.__serializer__.deserialize(x, cls)
         ).execute()
 
-    def delete(self) -> None:
+    def delete(self):
         driver = self.get_driver()
         return driver.delete(self.get_primary_key()).execute()
 
-    def expire(self, ttl: int) -> None:
+    def expire(self, ttl: int):
         driver = self.get_driver()
         return driver.expire(key=self.get_primary_key(), ttl=ttl).execute()
 
@@ -70,6 +70,10 @@ class BaseRedisModel(BaseModel):
         driver = self.get_driver()
         value = self.__serializer__.serialize(self)
         return driver.commit(key=self.get_primary_key(), value=value).execute()
+
+    def ttl(self) -> int:
+        driver = self.get_driver()
+        return driver.ttl(self.get_primary_key())
 
     def __setitem__(self, key, value):
         if key == '__redis_adaptor__':
