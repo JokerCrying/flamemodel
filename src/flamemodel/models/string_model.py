@@ -7,9 +7,9 @@ class String(BaseRedisModel):
     def incr(self, amount: int = 1):
         driver = self.get_driver()
         pk = self.get_primary_key()
-        return driver.incr(pk, amount).execute()
+        return driver.incr(pk, amount)
 
     def decr(self, amount: int = 1):
         driver = self.get_driver()
         pk = self.get_primary_key()
-        return driver.decr(pk, amount).execute()
+        return driver.decr(pk, amount)

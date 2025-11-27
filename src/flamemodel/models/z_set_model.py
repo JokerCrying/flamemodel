@@ -27,21 +27,21 @@ class ZSet(BaseRedisModel):
             value = cls.__serializer__.serialize(member)
             score = member.score_value if hasattr(member, 'score_value') else 0.0
             mapping[value] = score
-        return driver.zadd(pk_key, mapping).execute()
+        return driver.zadd(pk_key, mapping)
 
     @classmethod
     def remove(cls, pk: Any, *members: SelfInstance) -> int:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
         values = [cls.__serializer__.serialize(m) for m in members]
-        return driver.zrem(pk_key, *values).execute()
+        return driver.zrem(pk_key, *values)
 
     @classmethod
     def get_score(cls, pk: Any, member: SelfInstance) -> Optional[float]:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
         value = cls.__serializer__.serialize(member)
-        return driver.zscore(pk_key, value).execute()
+        return driver.zscore(pk_key, value)
 
     @classmethod
     def get_rank(cls, pk: Any, member: SelfInstance, reverse: bool = False) -> Optional[int]:
@@ -49,9 +49,9 @@ class ZSet(BaseRedisModel):
         driver = cls.get_driver()
         value = cls.__serializer__.serialize(member)
         if reverse:
-            return driver.zrevrank(pk_key, value).execute()
+            return driver.zrevrank(pk_key, value)
         else:
-            return driver.zrank(pk_key, value).execute()
+            return driver.zrank(pk_key, value)
 
     @classmethod
     def range(cls, pk: Any, start: int, end: int,
@@ -79,7 +79,7 @@ class ZSet(BaseRedisModel):
             results = driver.zrevrange(pk_key, start, end, withscores=withscores)
         else:
             results = driver.zrange(pk_key, start, end, withscores=withscores)
-        return results.then(_final_handler).execute()
+        return results.then(_final_handler)
 
     @classmethod
     def top(cls, pk: Any, n: int, withscores: bool = False) -> TypingList[SelfInstance]:
@@ -93,14 +93,14 @@ class ZSet(BaseRedisModel):
     def size(cls, pk: Any) -> int:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
-        return driver.zcard(pk_key).execute()
+        return driver.zcard(pk_key)
 
     @classmethod
     def count(cls, pk: Any, min_score: float = float('-inf'),
               max_score: float = float('inf')) -> int:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
-        return driver.zcount(pk_key, min_score, max_score).execute()
+        return driver.zcount(pk_key, min_score, max_score)
 
     @classmethod
     def range_by_score(cls, pk: Any, min_score: float, max_score: float,
@@ -127,20 +127,20 @@ class ZSet(BaseRedisModel):
         driver = cls.get_driver()
         results = driver.zrangebyscore(pk_key, min_score, max_score,
                                        withscores=withscores, offset=offset, count=count)
-        return results.then(_final_handler).execute()
+        return results.then(_final_handler)
 
     def save(self) -> int:
         pk_key = self.get_primary_key()
         driver = self.get_driver()
         value = self.__serializer__.serialize(self)
         score = self.score_value
-        return driver.zadd(pk_key, {value: score}).execute()
+        return driver.zadd(pk_key, {value: score})
 
     def remove_self(self) -> int:
         pk_key = self.get_primary_key()
         driver = self.get_driver()
         value = self.__serializer__.serialize(self)
-        return driver.zrem(pk_key, value).execute()
+        return driver.zrem(pk_key, value)
 
     def incr_score(self, amount: float = 1.0) -> float:
         def _final_handler(r):
@@ -152,7 +152,7 @@ class ZSet(BaseRedisModel):
         value = self.__serializer__.serialize(self)
         field_name = self._score_field()
         new_score = driver.zincrby(pk_key, amount, value)
-        return new_score.then(_final_handler).execute()
+        return new_score.then(_final_handler)
 
     def get_my_rank(self, reverse: bool = False) -> Optional[int]:
         pk, _ = self.pk_info()

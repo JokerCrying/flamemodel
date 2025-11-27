@@ -11,7 +11,7 @@ class BitMap(BaseRedisModel):
     def count_by(cls, pk: Any) -> int:
         driver = cls.get_driver()
         key = cls.primary_key(pk)
-        return driver.bitcount(key).execute()
+        return driver.bitcount(key)
 
     @classmethod
     def get(cls, pk: Any) -> SelfInstance:
@@ -34,7 +34,7 @@ class BitMap(BaseRedisModel):
             lambda pairs: cls.__serializer__.deserialize(
                 dict(pairs) | {pk_field_name: pk}, cls
             )
-        ).execute()
+        )
 
     def bitmap(self) -> Tuple[int]:
         driver = self.get_driver()
@@ -50,7 +50,7 @@ class BitMap(BaseRedisModel):
             acts,
             runtime_mode=self.__redis_adaptor__.runtime_mode,
             result_from_index=None,
-        ).then(tuple).execute()
+        ).then(tuple)
 
     def save(self) -> SelfInstance:
         driver = self.get_driver()
@@ -65,12 +65,12 @@ class BitMap(BaseRedisModel):
             acts,
             runtime_mode=self.__redis_adaptor__.runtime_mode,
             result_from_index=None
-        ).execute()
+        )
 
     def count(self) -> int:
         driver = self.get_driver()
         key = self.get_primary_key()
-        return driver.bitcount(key).execute()
+        return driver.bitcount(key)
 
     def and_(self, other: 'BitMap', dest_pk: Any) -> SelfInstance:
         dest_pk_key = self.primary_key(dest_pk)
@@ -145,11 +145,4 @@ class BitMap(BaseRedisModel):
             [bitop_act, read_act],
             runtime_mode=runtime_mode,
             result_from_index=1
-        ).execute()
-
-    def __iter__(self):
-        return iter(self.bitmap())
-
-    async def __aiter__(self):
-        async for item in self.bitmap():
-            yield item
+        )

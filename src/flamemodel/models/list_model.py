@@ -21,26 +21,26 @@ class List(BaseRedisModel):
         result = driver.lindex(pk_key, index)
         return result.then(
             lambda x: cls.__serializer__.deserialize(x, cls)
-        ).execute()
+        )
 
     @classmethod
     def len(cls, pk: Any) -> int:
         driver = cls.get_driver()
         pk_key = cls.primary_key(pk)
-        return driver.llen(pk_key).execute()
+        return driver.llen(pk_key)
 
     @classmethod
     def set(cls, pk: Any, index: int, value: SelfInstance):
         driver = cls.get_driver()
         pk_key = cls.primary_key(pk)
         value = cls.__serializer__.serialize(value)
-        return driver.lset(pk_key, index, value).execute()
+        return driver.lset(pk_key, index, value)
 
     @classmethod
     def clear(cls, pk: Any):
         driver = cls.get_driver()
         pk_key = cls.primary_key(pk)
-        return driver.ltrim(pk_key, 1, 0).execute()
+        return driver.ltrim(pk_key, 1, 0)
 
     @classmethod
     def all(cls, pk: Any):
@@ -51,7 +51,7 @@ class List(BaseRedisModel):
                 cls.__serializer__.deserialize(i, cls)
                 for i in x
             ]
-        ).execute()
+        )
 
     def remove_before(self):
         return self._remove_queue('before')
@@ -84,16 +84,16 @@ class List(BaseRedisModel):
                 self.__serializer__.deserialize(r, self.__class__)
                 for r in x
             ]
-        ).execute()
+        )
 
     def _save(self, pos: Literal['left', 'right']):
         pk = self.get_primary_key()
         value = self.__serializer__.serialize(self)
         driver = self.get_driver()
         if pos == 'left':
-            return driver.lpush(pk, value).execute()
+            return driver.lpush(pk, value)
         else:
-            return driver.rpush(pk, value).execute()
+            return driver.rpush(pk, value)
 
     def _remove_queue(self, pos: Literal['before', 'after', 'equals']):
         pk = self.get_primary_key()
@@ -105,7 +105,7 @@ class List(BaseRedisModel):
             remove_tag = -1
         else:
             remove_tag = 0
-        return driver.lrem(pk, remove_tag, value).execute()
+        return driver.lrem(pk, remove_tag, value)
 
     @classmethod
     def _pop(cls, pk: Any, pos: Literal['left', 'right']) -> SelfInstance:
@@ -117,4 +117,4 @@ class List(BaseRedisModel):
             result = driver.rpop(pk_key)
         return result.then(
             lambda x: cls.__serializer__.deserialize(x, cls)
-        ).execute()
+        )

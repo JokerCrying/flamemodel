@@ -40,14 +40,17 @@ class DefaultKeyBuilder(KeyBuilderProtocol):
             pk_field_name: str,
             pk_field_info: Dict[str, 'FieldMetaData']
     ) -> str:
-        """Build primary key: ModelName[:shard_tags]:pk_value"""
+        pattern = getattr(model, '__key_pattern__', None)
+        if pattern and not shard_tags:
+            placeholders = {'pk': pk, pk_field_name: pk}
+            key = pattern.format(**placeholders)
+            if self.namespace:
+                return f"{self.namespace}{self.delimiter}{key}"
+            return key
         parts = [self._get_model_name(model)]
-
         if shard_tags:
             parts.append(self.format_shard_tags(shard_tags))
-
         parts.append(str(pk))
-
         return self._join_parts(parts)
 
     def index_key(
@@ -163,15 +166,15 @@ class DefaultKeyBuilder(KeyBuilderProtocol):
             pk: Any,
             field_name: str
     ) -> str:
-        """Build hash key: ModelName:pk
-        
-        Note: For hash-based models, the field_name is used as the hash field,
-        not part of the key itself.
-        """
-        parts = [
-            self._get_model_name(model),
-            str(pk)
-        ]
+        pattern = getattr(model, '__key_pattern__', None)
+        if pattern:
+            pk_field_name = list(model.__model_meta__.pk_info.keys())[0]
+            placeholders = {'pk': pk, pk_field_name: pk}
+            key = pattern.format(**placeholders)
+            if self.namespace:
+                return f"{self.namespace}{self.delimiter}{key}"
+            return key
+        parts = [self._get_model_name(model), str(pk)]
         return self._join_parts(parts)
 
     def model_collection_key(

@@ -13,20 +13,20 @@ class Set(BaseRedisModel):
         results = driver.smembers(pk_key)
         return results.then(
             lambda x: [cls.__serializer__.deserialize(r, cls) for r in x]
-        ).execute()
+        )
 
     @classmethod
     def contains(cls, pk: Any, member: SelfInstance) -> bool:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
         value = cls.__serializer__.serialize(member)
-        return driver.sismember(pk_key, value).execute()
+        return driver.sismember(pk_key, value)
 
     @classmethod
     def size(cls, pk: Any) -> int:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
-        return driver.scard(pk_key).execute()
+        return driver.scard(pk_key)
 
     @classmethod
     def pop_random(cls, pk: Any) -> SelfInstance:
@@ -35,7 +35,7 @@ class Set(BaseRedisModel):
         result = driver.spop(pk_key)
         return result.then(
             lambda x: cls.__serializer__.deserialize(x, cls)
-        ).execute()
+        )
 
     @classmethod
     def random(cls, pk: Any, count: int = 1) -> List[SelfInstance]:
@@ -47,7 +47,7 @@ class Set(BaseRedisModel):
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
         results = driver.srandmember(pk_key, count)
-        return results.then(_final_handler).execute()
+        return results.then(_final_handler)
 
     @classmethod
     def union(cls, *pks: Any) -> TypingSet[SelfInstance]:
@@ -56,7 +56,7 @@ class Set(BaseRedisModel):
         results = driver.sunion(*keys)
         return results.then(
             lambda x: {cls.__serializer__.deserialize(r, cls) for r in x}
-        ).execute()
+        )
 
     @classmethod
     def intersection(cls, *pks: Any) -> TypingSet[SelfInstance]:
@@ -65,7 +65,7 @@ class Set(BaseRedisModel):
         results = driver.sinter(*keys)
         return results.then(
             lambda x: {cls.__serializer__.deserialize(r, cls) for r in x}
-        ).execute()
+        )
 
     @classmethod
     def difference(cls, *pks: Any) -> TypingSet[SelfInstance]:
@@ -74,7 +74,7 @@ class Set(BaseRedisModel):
         results = driver.sdiff(*keys)
         return results.then(
             lambda x: {cls.__serializer__.deserialize(r, cls) for r in x}
-        ).execute()
+        )
 
     @classmethod
     def move(cls, member: SelfInstance, src_pk: Any, dest_pk: Any) -> bool:
@@ -82,7 +82,7 @@ class Set(BaseRedisModel):
         src_key = cls.primary_key(src_pk)
         dest_key = cls.primary_key(dest_pk)
         value = cls.__serializer__.serialize(member)
-        return driver.smove(src_key, dest_key, value).execute()
+        return driver.smove(src_key, dest_key, value)
 
     def save(self) -> int:
         return self.add()
@@ -91,16 +91,16 @@ class Set(BaseRedisModel):
         pk_key = self.get_primary_key()
         value = self.__serializer__.serialize(self)
         driver = self.get_driver()
-        return driver.sadd(pk_key, value).execute()
+        return driver.sadd(pk_key, value)
 
     def remove(self) -> int:
         pk_key = self.get_primary_key()
         value = self.__serializer__.serialize(self)
         driver = self.get_driver()
-        return driver.srem(pk_key, value).execute()
+        return driver.srem(pk_key, value)
 
     def is_member(self) -> bool:
         pk_key = self.get_primary_key()
         value = self.__serializer__.serialize(self)
         driver = self.get_driver()
-        return driver.sismember(pk_key, value).execute()
+        return driver.sismember(pk_key, value)

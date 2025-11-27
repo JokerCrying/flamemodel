@@ -15,12 +15,12 @@ class HyperLogLog(BaseRedisModel):
         driver = self.get_driver()
         # Convert elements to strings for Redis storage
         str_elements = [str(elem) for elem in elements]
-        return driver.pfadd(key, *str_elements).execute()
+        return driver.pfadd(key, *str_elements)
 
     def count(self) -> int:
         key = self.get_primary_key()
         driver = self.get_driver()
-        return driver.pfcount(key).execute()
+        return driver.pfcount(key)
 
     def merge_from(self, *other_instances: SelfInstance) -> int:
         if not other_instances:
@@ -28,7 +28,7 @@ class HyperLogLog(BaseRedisModel):
         dest_key = self.get_primary_key()
         source_keys = [inst.get_primary_key() for inst in other_instances]
         driver = self.get_driver()
-        return driver.pfmerge(dest_key, *source_keys).execute()
+        return driver.pfmerge(dest_key, *source_keys)
 
     def save(self) -> SelfInstance:
         raise NotImplementedError(
@@ -54,18 +54,18 @@ class HyperLogLog(BaseRedisModel):
         key = cls.primary_key(pk)
         driver = cls.get_driver()
         str_elements = [str(elem) for elem in elements]
-        return driver.pfadd(key, *str_elements).execute()
+        return driver.pfadd(key, *str_elements)
 
     @classmethod
     def count_by(cls, pk: Any) -> int:
         key = cls.primary_key(pk)
         driver = cls.get_driver()
-        return driver.pfcount(key).execute()
+        return driver.pfcount(key)
 
     @classmethod
     def count_by_key(cls, key: str) -> int:
         driver = cls.get_driver()
-        return driver.pfcount(key).execute()
+        return driver.pfcount(key)
 
     @classmethod
     def merge_by_pks(
@@ -93,7 +93,7 @@ class HyperLogLog(BaseRedisModel):
             runtime_mode=cls.__redis_adaptor__.runtime_mode,
             result_from_index=1,
             client=cls.__redis_adaptor__.proxy
-        ).execute()
+        )
 
     @classmethod
     def merge_to_key(
@@ -117,7 +117,7 @@ class HyperLogLog(BaseRedisModel):
             runtime_mode=cls.__redis_adaptor__.runtime_mode,
             client=cls.__redis_adaptor__.proxy,
             result_from_index=None
-        ).then(lambda x: dest_key).execute()
+        ).then(lambda x: dest_key)
 
     @classmethod
     def merge_instances(
@@ -130,7 +130,7 @@ class HyperLogLog(BaseRedisModel):
         dest_key = cls.primary_key(dest_pk)
         source_keys = [inst.get_primary_key() for inst in source_instances]
         driver = cls.get_driver()
-        return driver.pfmerge(dest_key, *source_keys).execute()
+        return driver.pfmerge(dest_key, *source_keys)
 
     @classmethod
     def union_count(cls, *pks: Any) -> int:

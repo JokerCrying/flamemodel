@@ -14,7 +14,7 @@ class Hash(BaseRedisModel):
         act = driver.hget(pk_key, field)
         return act.then(
             lambda r: cls.__serializer__.deserialize(r, cls)
-        ).execute()
+        )
 
     @classmethod
     def get_all(cls, pk: Any) -> List[SelfInstance]:
@@ -26,16 +26,16 @@ class Hash(BaseRedisModel):
                 cls.__serializer__.deserialize(i, cls)
                 for i in x.values()
             ]
-        ).execute()
+        )
 
     @classmethod
-    def keys(cls, pk: Any) -> List[str]:
+    def hash_keys(cls, pk: Any) -> List[str]:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
-        return driver.hkeys(pk_key).execute()
+        return driver.hkeys(pk_key)
 
     @classmethod
-    def values(cls, pk: Any) -> List[SelfInstance]:
+    def hash_values(cls, pk: Any) -> List[SelfInstance]:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
         result = driver.hvals(pk_key)
@@ -44,23 +44,23 @@ class Hash(BaseRedisModel):
                 cls.__serializer__.deserialize(i, cls)
                 for i in x
             ]
-        ).execute()
+        )
 
     def exists(self, field: Any) -> bool:
         driver = self.get_driver()
-        return driver.hexists(self.get_primary_key(), field).execute()
+        return driver.hexists(self.get_primary_key(), field)
 
     def hash_delete(self):
         _, value = self.hash_field
         driver = self.get_driver()
         pk = self.get_primary_key()
-        return driver.hdel(pk, value).execute()
+        return driver.hdel(pk, value)
 
     def save(self) -> SelfInstance:
         _, field = self.hash_field
         pk = self.get_primary_key()
         driver = self.get_driver()
-        return driver.hset(pk, field, self.__serializer__.serialize(self)).execute()
+        return driver.hset(pk, field, self.__serializer__.serialize(self))
 
     @classmethod
     def _hash_field(cls, value: Any = None):

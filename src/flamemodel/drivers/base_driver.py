@@ -29,3 +29,6 @@ class BaseDriver(metaclass=SingletonMeta):
 
     def persist(self, key: str):
         return self.adaptor.proxy.persist(key)
+
+    def keys(self, pk: str):
+        return self.adaptor.proxy.keys(pk)

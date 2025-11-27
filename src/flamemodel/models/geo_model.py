@@ -42,7 +42,7 @@ class Geo(BaseRedisModel):
             [geo_act, hash_act],
             runtime_mode=self.__redis_adaptor__.runtime_mode,
             client=self.__redis_adaptor__.proxy
-        ).then(lambda _: self).execute()
+        ).then(lambda _: self)
 
     @classmethod
     def add(cls, pk: Any, *members: SelfInstance) -> int:
@@ -65,7 +65,7 @@ class Geo(BaseRedisModel):
             runtime_mode=cls.__redis_adaptor__.runtime_mode,
             result_from_index=-1,
             client=cls.__redis_adaptor__.proxy
-        ).execute()
+        )
 
     @classmethod
     def search_radius(cls, pk: Any, longitude: float, latitude: float,
@@ -90,14 +90,14 @@ class Geo(BaseRedisModel):
                 runtime_mode=cls.__redis_adaptor__.runtime_mode,
                 result_from_index=None,
                 client=cls.__redis_adaptor__.proxy
-            ).then(lambda x: x[:count]).execute()
+            ).then(lambda x: x[:count])
 
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
         return driver.georadius(
             pk_key, longitude,
             latitude, radius, unit
-        ).then(_post_operation).execute()
+        ).then(_post_operation)
 
     @classmethod
     def get_by_member(cls, pk: Any, member_id: str) -> Optional[SelfInstance]:
@@ -112,7 +112,7 @@ class Geo(BaseRedisModel):
         pk_key = cls.primary_key(pk)
         hash_key = f"{pk_key}:data"
         hash_driver = cls.__redis_adaptor__.get_redis_driver('hash')
-        return hash_driver.hget(hash_key, member_id).then(_final_handler).execute()
+        return hash_driver.hget(hash_key, member_id).then(_final_handler)
 
     def delete_self(self) -> int:
         """Delete the current location point (remove from Geo and Hash)"""
@@ -131,4 +131,4 @@ class Geo(BaseRedisModel):
             runtime_mode=self.__redis_adaptor__.runtime_mode,
             result_from_index=-1,
             client=self.__redis_adaptor__.proxy
-        ).execute()
+        )

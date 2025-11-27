@@ -23,7 +23,7 @@ class Stream(BaseRedisModel):
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
         fields = cls._serialize_to_dict(entry)
-        return driver.xadd(pk_key, fields, id=entry_value).execute()
+        return driver.xadd(pk_key, fields, id=entry_value)
 
     @classmethod
     def read(cls, streams: Dict[Any, str], count: Optional[int] = None,
@@ -42,7 +42,7 @@ class Stream(BaseRedisModel):
         driver = cls.get_driver()
         stream_keys = {cls.primary_key(pk): start_id for pk, start_id in streams.items()}
         results = driver.xread(streams=stream_keys, count=count, block=block)
-        return results.then(_final_handler).execute()
+        return results.then(_final_handler)
 
     @classmethod
     def range(cls, pk: Any, start: str = "-", end: str = "+",
@@ -55,7 +55,7 @@ class Stream(BaseRedisModel):
                 (entry_id, cls._deserialize_from_dict(entry_id, fields))
                 for entry_id, fields in x
             ]
-        ).execute()
+        )
 
     @classmethod
     def reverse_range(cls, pk: Any, end: str = "+", start: str = "-",
@@ -68,25 +68,25 @@ class Stream(BaseRedisModel):
                 (entry_id, cls._deserialize_from_dict(entry_id, fields))
                 for entry_id, fields in x
             ]
-        ).execute()
+        )
 
     @classmethod
     def delete_entries(cls, pk: Any, *entry_ids: str) -> int:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
-        return driver.xdel(pk_key, *entry_ids).execute()
+        return driver.xdel(pk_key, *entry_ids)
 
     @classmethod
     def length(cls, pk: Any) -> int:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
-        return driver.xlen(pk_key).execute()
+        return driver.xlen(pk_key)
 
     @classmethod
     def trim(cls, pk: Any, max_length: int, approximate: bool = True) -> int:
         pk_key = cls.primary_key(pk)
         driver = cls.get_driver()
-        return driver.xtrim(pk_key, maxlen=max_length, approximate=approximate).execute()
+        return driver.xtrim(pk_key, maxlen=max_length, approximate=approximate)
 
     def save(self) -> str:
         return self.add()
@@ -100,7 +100,7 @@ class Stream(BaseRedisModel):
         driver = self.get_driver()
         fields = self._serialize_to_dict(self)
         field_name = self._entry_id_field()
-        return driver.xadd(pk_key, fields, id=entry_value).then(_final_handler).execute()
+        return driver.xadd(pk_key, fields, id=entry_value).then(_final_handler)
 
     def remove(self) -> int:
         pk_key = self.get_primary_key()
@@ -108,7 +108,7 @@ class Stream(BaseRedisModel):
         if entry_id == "*":
             raise ValueError("Cannot delete entry with ID '*'. Entry must have a valid ID.")
         driver = self.get_driver()
-        return driver.xdel(pk_key, entry_id).execute()
+        return driver.xdel(pk_key, entry_id)
 
     @classmethod
     def _serialize_to_dict(cls, instance: SelfInstance) -> Dict[str, Any]:

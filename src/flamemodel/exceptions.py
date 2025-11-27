@@ -124,6 +124,13 @@ class NotUsedFieldsError(FlameModelException):
     pass
 
 
+class FieldNotFoundError(FlameModelException):
+    def __init__(self, message: str, model_cls, field_name):
+        super().__init__(message)
+        self.model_cls = model_cls
+        self.field_name = field_name
+
+
 class AdapterTypeError(FlameModelException):
     def __init__(self, msg, *, cur_type, original_type):
         self.message = msg
